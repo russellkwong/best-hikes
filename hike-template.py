@@ -2,10 +2,14 @@
 
 """hike-template.py: Creates maps for Best Hikes Around Ithaca Book."""
 
+# SETUP
+
 import os
 import arcpy as ap
 
 aprx = ap.mp.ArcGISProject("CURRENT")
+
+# FUNCTIONS
 
 def map_obj(map_name):
     """
@@ -78,6 +82,27 @@ def MakeRec_LL(llx, lly, w, h):
     rec = ap.Polygon(array)
     return rec
 
-# SAMPLE CODE
+# PROJECT CODE
 # lyt = aprx.createLayout(6, 9, 'INCH', 'Layout')
 # mf = lyt.createMapFrame(MakeRec_LL(0.25, 5.0, 5.5, 3.75), m, 'Map 1')
+
+## Adding GPX files
+# aprx_dir = r'C:\Users\lib-pac-rsch\Desktop\best-hikes\SpatialFiles'
+# aprx_gdb = r'C:\Users\lib-pac-rsch\Desktop\best-hikes\MyProject.gdb'
+
+# arcpy.conversion.GPXtoFeatures(
+#     Input_GPX_File = os.path.join(aprx_dir, 'best-hikes-all-routes-22Jan25.gpx'),
+#     Output_Feature_class = os.path.join(aprx_gdb, 'hike_routes_points'),
+#     Output_Type = 'POINTS'
+# )
+
+# arcpy.management.PointsToLine(
+#     Input_Features = 'hike_routes_points',
+#     Output_Feature_Class = os.path.join(aprx_gdb, 'hike_routes_tracks'),
+#     Line_Field = "Name",
+#     Sort_Field = None,
+#     Close_Line = "NO_CLOSE",
+#     Line_Construction_Method = "CONTINUOUS",
+#     Attribute_Source = "NONE",
+#     Transfer_Fields = None
+# )
