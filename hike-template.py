@@ -83,6 +83,7 @@ def MakeRec_LL(llx, lly, w, h):
     return rec
 
 # PROJECT CODE
+# m = map_obj('Map')
 # lyt = aprx.createLayout(6, 9, 'INCH', 'Layout')
 # mf = lyt.createMapFrame(MakeRec_LL(0.25, 5.0, 5.5, 3.75), m, 'Map 1')
 
@@ -106,3 +107,24 @@ def MakeRec_LL(llx, lly, w, h):
 #     Attribute_Source = "NONE",
 #     Transfer_Fields = None
 # )
+
+# m.addDataFromPath(os.path.join(aprx_dir, r'NLCD_LndCov_2023\Annual_NLCD_LndCov_2023_CU_C1V0_sAzmI4M2YwCTSt5k8oPt.tiff'))
+# arcpy.conversion.RasterToPolygon(
+#     in_raster="Annual_NLCD_LndCov_2023_CU_C1V0_sAzmI4M2YwCTSt5k8oPt.tiff",
+#     out_polygon_features=r"C:\Users\lib-pac-rsch\Desktop\best-hikes\MyProject.gdb\RasterT_Annual_1",
+#     simplify="NO_SIMPLIFY",
+#     raster_field="Value",
+#     create_multipart_features="SINGLE_OUTER_PART",
+#     max_vertices_per_feature=None
+# )
+
+# lyr = lyr_obj(m, 'RasterT_Annual_1')
+# sym = lyr.symbology
+
+# sym.updateRenderer('UniqueValueRenderer')
+# sym.renderer.fields = ["gridcode"]
+# for grp in sym.renderer.groups:
+#     for itm in grp.items:
+#         print(itm.value)
+#         if itm.value == [['11']]:
+#             print(itm.symbol.listSymbolsFromGallery)
