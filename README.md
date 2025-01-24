@@ -10,3 +10,6 @@ Python, ArcPy
 ## Contacts:
 Russell Kwong - rk584@cornell.edu <br>
 Project Link: https://github.com/russellkwong/best-hikes
+
+## Data Sources:
+Files available at https://cornell.box.com/s/66q8utbfhe0v5asuo43mb7pp1luqudkp
