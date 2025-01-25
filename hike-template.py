@@ -83,36 +83,45 @@ def MakeRec_LL(llx, lly, w, h):
     return rec
 
 # PROJECT CODE
-# m = map_obj('Map')
+m = map_obj('Map')
 # lyt = aprx.createLayout(6, 9, 'INCH', 'Layout')
 # mf = lyt.createMapFrame(MakeRec_LL(0.25, 5.0, 5.5, 3.75), m, 'Map 1')
 
 ## Adding GPX files
-# aprx_dir = r'C:\Users\lib-pac-rsch\Desktop\best-hikes\SpatialFiles'
-# aprx_gdb = r'C:\Users\lib-pac-rsch\Desktop\best-hikes\MyProject.gdb'
+aprx_dir = r'C:\Users\AAP_LAB\Desktop\best-hikes\SpatialFiles'
+aprx_gdb = r'C:\Users\AAP_LAB\Desktop\best-hikes\MyProject.gdb'
 
-# arcpy.conversion.GPXtoFeatures(
-#     Input_GPX_File = os.path.join(aprx_dir, 'best-hikes-all-routes-22Jan25.gpx'),
-#     Output_Feature_class = os.path.join(aprx_gdb, 'hike_routes_points'),
-#     Output_Type = 'POINTS'
-# )
+# TRACKS
+ap.conversion.GPXtoFeatures(
+    Input_GPX_File = os.path.join(aprx_dir, 'best-hikes-all-routes-22Jan25.gpx'),
+    Output_Feature_class = os.path.join(aprx_gdb, 'hike_routes_points'),
+    Output_Type = 'POINTS'
+)
 
-# arcpy.management.PointsToLine(
-#     Input_Features = 'hike_routes_points',
-#     Output_Feature_Class = os.path.join(aprx_gdb, 'hike_routes_tracks'),
-#     Line_Field = "Name",
-#     Sort_Field = None,
-#     Close_Line = "NO_CLOSE",
-#     Line_Construction_Method = "CONTINUOUS",
-#     Attribute_Source = "NONE",
-#     Transfer_Fields = None
-# )
+lyr = ap.management.PointsToLine(
+    Input_Features = 'hike_routes_points',
+    Output_Feature_Class = os.path.join(aprx_gdb, 'hike_routes_tracks'),
+    Line_Field = "Name",
+    Sort_Field = None,
+    Close_Line = "NO_CLOSE",
+    Line_Construction_Method = "CONTINUOUS",
+    Attribute_Source = "NONE",
+    Transfer_Fields = None
+)
+
+lyr = lyr_obj(m, 'hike_routes_tracks')
+
+sym = lyr.symbology
+
+sym.renderer.symbol.outlineWidth = 2.5
+sym.renderer.symbol.outlineColor = {'RGB': [0, 0, 0, 100]}
+lyr.symbology = sym
 
 # LAND COVER
 m.addDataFromPath(os.path.join(aprx_dir, r'NLCD_LndCov_2023\Annual_NLCD_LndCov_2023_CU_C1V0_sAzmI4M2YwCTSt5k8oPt.tiff'))
 ap.conversion.RasterToPolygon(
     in_raster="Annual_NLCD_LndCov_2023_CU_C1V0_sAzmI4M2YwCTSt5k8oPt.tiff",
-    out_polygon_features=r"C:\Users\lib-pac-rsch\Desktop\best-hikes\MyProject.gdb\RasterT_Annual_1",
+    out_polygon_features= os.path.join(aprx_gdb, r'RasterT_Annual_1'),
     simplify="NO_SIMPLIFY",
     raster_field="Value",
     create_multipart_features="MULTIPLE_OUTER_PART",
@@ -139,12 +148,11 @@ lyr.symbology = sym
 # CONTOURS
 lyr = m.addDataFromPath(os.path.join(aprx_dir, r'TompCty_Contours\Tompkins_County_Natural_Resources_Inventory_(OLD).shp'))
 lyr_rename(lyr, 'Contours')
-contour_symbols = {'1': {'color': {'RGB': [105, 80, 7, 100]},
+contour_symbols = {'1': {'color': {'RGB': [64, 64, 64, 100]},
                         'outlineWidth': 1},
-                  '0': {'color': {'RGB': [105, 80, 7, 100]},
+                  '0': {'color': {'RGB': [80, 80, 80, 100]},
                        'outlineWidth': 0.3}}
 
-lyr = lyr_obj(m, 'Contours')
 sym = lyr.symbology
 
 ap.management.CalculateField(
@@ -173,7 +181,7 @@ lyr_rename(lyr, 'hydro')
 
 sym = lyr.symbology
 
-sym.renderer.symbol.applySymbolFromGallery('10% Simple Hatch')
+sym.renderer.symbol.applySymbolFromGallery('Water Intermittent')
 sym.renderer.symbol.outlineWidth = 0
 
 lyr.symbology = sym
@@ -188,36 +196,6 @@ sym = lyr.symbology
 sym.updateRenderer('SimpleRenderer')
 
 sym.renderer.symbol.applySymbolFromGallery('Minor Road')
-lyr.symbology = sym
-
-# TRACKS
-m = map_obj('Map')
-aprx_dir = r'C:\Users\lib-pac-rsch\Desktop\best-hikes\SpatialFiles'
-aprx_gdb = r'C:\Users\lib-pac-rsch\Desktop\best-hikes\MyProject.gdb'
-
-ap.conversion.GPXtoFeatures(
-    Input_GPX_File = os.path.join(aprx_dir, 'best-hikes-all-routes-22Jan25.gpx'),
-    Output_Feature_class = os.path.join(aprx_gdb, 'hike_routes_points'),
-    Output_Type = 'POINTS'
-)
-
-lyr = ap.management.PointsToLine(
-    Input_Features = 'hike_routes_points',
-    Output_Feature_Class = os.path.join(aprx_gdb, 'hike_routes_tracks'),
-    Line_Field = "Name",
-    Sort_Field = None,
-    Close_Line = "NO_CLOSE",
-    Line_Construction_Method = "CONTINUOUS",
-    Attribute_Source = "NONE",
-    Transfer_Fields = None
-)
-
-lyr = lyr_obj(m, 'hike_routes_tracks')
-
-sym = lyr.symbology
-
-sym.renderer.symbol.outlineWidth = 2.5
-sym.renderer.symbol.outlineColor = {'RGB': [0, 0, 0, 100]}
 lyr.symbology = sym
 
 # POI
@@ -258,12 +236,15 @@ lyr.symbology = sym
 
 # LAYOUT
 lyt = aprx.createLayout(6, 9, 'INCH', 'Layout')
-mf = lyt.createMapFrame(MakeRec_LL(0.25, 5.0, 5.5, 3.75), m, 'Map 1')
+mf = lyt.createMapFrame(MakeRec_LL(0.50, 0.50, 5.0, 3.75), m, 'Map 1')
 
 sbName = 'Double Alternating Scale Bar 1 Metric'
 sbStyItm = aprx.listStyleItems('ArcGIS 2D', 'SCALE_BAR', sbName)[0]
 sbEnv = MakeRec_LL(0.5, 5.5, 2.5, 0.5)
 sb = lyt.createMapSurroundElement(sbEnv, 'Scale_bar', mf, sbStyItm)
+
+recTxt = aprx.createTextElement(lyt, MakeRec_LL(0.5, 4.5, 5.0, 3.5), 'POLYGON',
+                             'Sample Text', 10, 'Arial', 'Regular', name='SampleText')
 
 # m.addDataFromPath(r'https://elevation.its.ny.gov/arcgis/rest/services/NYS_Statewide_Hillshade/MapServer/3',
 #                  web_service_type = 'ARCGIS_SERVER_WEB',
