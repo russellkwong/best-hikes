@@ -7,6 +7,7 @@
 import os
 import arcpy as ap
 
+# set ArcGIS project to current project
 aprx = ap.mp.ArcGISProject("CURRENT")
 
 # FUNCTIONS
@@ -84,12 +85,10 @@ def MakeRec_LL(llx, lly, w, h):
 
 # PROJECT CODE
 m = map_obj('Map')
-# lyt = aprx.createLayout(6, 9, 'INCH', 'Layout')
-# mf = lyt.createMapFrame(MakeRec_LL(0.25, 5.0, 5.5, 3.75), m, 'Map 1')
 
-## Adding GPX files
-aprx_dir = r'C:\Users\AAP_LAB\Desktop\best-hikes\SpatialFiles'
-aprx_gdb = r'C:\Users\AAP_LAB\Desktop\best-hikes\MyProject.gdb'
+## Setting Directories
+aprx_dir = r'C:\Users\kwong\Desktop\best-hikes\SpatialFiles'
+aprx_gdb = r'C:\Users\kwong\Desktop\best-hikes\MyProject.gdb'
 
 # TRACKS
 ap.conversion.GPXtoFeatures(
@@ -114,7 +113,7 @@ lyr = lyr_obj(m, 'hike_routes_tracks')
 sym = lyr.symbology
 
 sym.renderer.symbol.outlineWidth = 2.5
-sym.renderer.symbol.outlineColor = {'RGB': [0, 0, 0, 100]}
+sym.renderer.symbol.outlineColor = {'RGB': [52, 52, 52, 60]}
 lyr.symbology = sym
 
 # LAND COVER
@@ -180,11 +179,32 @@ lyr = m.addDataFromPath(r'https://gisservices.its.ny.gov/arcgis/rest/services/NY
 lyr_rename(lyr, 'hydro')
 
 sym = lyr.symbology
+sym.updateRenderer('SimpleRenderer')
 
-sym.renderer.symbol.applySymbolFromGallery('Water Intermittent')
-sym.renderer.symbol.outlineWidth = 0
-
+sym.renderer.symbol.color = {'RGB': [201, 201, 201, 100]}
+sym.renderer.symbol.outlineWidth = 1
+sym.renderer.symbol.outlineColor = {'RGB': [178, 178, 178, 100]}
 lyr.symbology = sym
+
+# STREAMS
+lyr = m.addDataFromPath(r'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Hydrography/MapServer/15',
+                 web_service_type = 'ARCGIS_SERVER_WEB',
+                 custom_parameters = {})
+lyr_rename(lyr, 'streams')
+
+sym = lyr.symbology
+sym.updateRenderer('SimpleRenderer')
+
+sym.renderer.symbol.color = {'RGB': [178, 178, 178, 100]}
+sym.renderer.symbol.outlineWidth = 1
+lyr.symbology = sym
+
+if lyr.supports('SHOWLABELS'):
+    lblClass = lyr.listLabelClasses()[0]
+    lbl_cim = lblClass.getDefinition('V3')
+    lbl_cim.textSymbol.symbol.symbol.symbolLayers[0].color.values = [52, 52, 52, 100]
+    lblClass.setDefinition(lbl_cim)
+
 
 # ROADS
 lyr = m.addDataFromPath(r'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Streets/MapServer/7',
@@ -199,7 +219,6 @@ sym.renderer.symbol.applySymbolFromGallery('Minor Road')
 lyr.symbology = sym
 
 # POI
-
 ap.management.XYTableToPoint(
     in_table = os.path.join(aprx_dir, r'POI_hikes_18Jan25.csv'),
     out_feature_class = os.path.join(aprx_gdb, r'POI_hikes'),
@@ -233,6 +252,47 @@ for grp in sym.renderer.groups:
         itm.symbol.size = 12
 lyr.symbology = sym
 
+# RAILS
+lyr = m.addDataFromPath(r'https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Railroads_1/FeatureServer/0',
+                 web_service_type = 'ARCGIS_SERVER_WEB',
+                 custom_parameters = {})
+lyr_rename(lyr, 'rails')
+
+sym = lyr.symbology 
+sym.updateRenderer('SimpleRenderer')
+
+sym.renderer.symbol.applySymbolFromGallery('Railroad')
+lyr.symbology = sym
+
+# FLLT PRESERVES AND TRAILS
+lyr = ap.conversion.JSONToFeatures(
+    in_json_file=os.path.join(aprx_dir, r'fllt-preserve-boundaries.geojson'),
+    out_features=os.path.join(aprx_gdb, r'flltPreserve'),
+    geometry_type="POLYGON"
+)
+lyr = lyr_obj(m, 'flltPreserve')
+
+sym = lyr.symbology
+sym.updateRenderer('SimpleRenderer')
+
+sym.renderer.symbol.applySymbolFromGallery('Dashed')
+sym.renderer.symbol.outlineWidth = 1.5
+sym.renderer.symbol.outlineColor = {'RGB': [100, 100, 100, 60]}
+lyr.symbology = sym
+
+lyr = ap.conversion.JSONToFeatures(
+    in_json_file=os.path.join(aprx_dir, r'fllt-trails.geojson'),
+    out_features=os.path.join(aprx_gdb, r'flltTrails'),
+    geometry_type="POLYLINE"
+)
+lyr = lyr_obj(m, 'flltTrails')
+
+sym = lyr.symbology
+sym.updateRenderer('SimpleRenderer')
+
+sym.renderer.symbol.applySymbolFromGallery('Dashed 2:2')
+sym.renderer.symbol.outlineWidth = 0.7
+lyr.symbology = sym
 
 # LAYOUT
 lyt = aprx.createLayout(6, 9, 'INCH', 'Layout')
