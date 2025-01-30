@@ -309,3 +309,92 @@ recTxt = aprx.createTextElement(lyt, MakeRec_LL(0.5, 4.5, 5.0, 3.5), 'POLYGON',
 # m.addDataFromPath(r'https://elevation.its.ny.gov/arcgis/rest/services/NYS_Statewide_Hillshade/MapServer/3',
 #                  web_service_type = 'ARCGIS_SERVER_WEB',
 #                  custom_parameters = {})
+
+## -- TO BE FORMATTED --
+
+## Upload hikes geojson
+lyr = ap.conversion.JSONToFeatures(
+    in_json_file=os.path.join(aprx_dir, r'best-hikes-all-routes-24Jan25.geojson'),
+    out_features=os.path.join(aprx_gdb, r'hike_routes'),
+    geometry_type="POLYLINE"
+)
+lyr = lyr_obj(m, 'hike_routes')
+
+sym = lyr.symbology
+
+sym.renderer.symbol.outlineWidth = 3.4
+sym.renderer.symbol.outlineColor = {'RGB': [52, 52, 52, 60]}
+lyr.symbology = sym
+
+## Remove layers
+lyr = ap.conversion.JSONToFeatures(
+    in_json_file=os.path.join(aprx_dir, r'best-hikes-all-routes-24Jan25.geojson'),
+    out_features=os.path.join(aprx_gdb, r'hike_routes'),
+    geometry_type="POLYLINE"
+)
+lyr = lyr_obj(m, 'hike_routes')
+
+sym = lyr.symbology
+
+sym.renderer.symbol.outlineWidth = 3.4
+sym.renderer.symbol.outlineColor = {'RGB': [52, 52, 52, 60]}
+lyr.symbology = sym
+
+## Add topo
+m.addDataFromPath(r'https://elevation.its.ny.gov/arcgis/rest/services/County_Tompkins2008_2_meter/ImageServer',
+                 web_service_type = 'ARCGIS_SERVER_WEB',
+                 custom_parameters = {})
+ext_lp = '-76.5271191647879 42.3051024869337 -76.5054331313753 42.3211945965332 GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],VERTCS["WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PARAMETER["Vertical_Shift",0.0],PARAMETER["Direction",1.0],UNIT["Meter",1.0]]'
+scrWksp = aprx_gdb
+
+def createHillshade(ext, scrWksp, lp):
+    if lp is True:
+        with ap.EnvManager(extent = ext_lp,
+                          scratchWorkspace = aprx_gdb):
+            out_raster = ap.sa.Hillshade(
+                in_raster="County_Tompkins2008_2_meter",
+                azimuth=315,
+                altitude=45,
+                model_shadows="NO_SHADOWS",
+                z_factor=1
+            )
+            out_raster.save(os.path.join(aprx_gdb, r'HillSha_Coun1'))
+    pass
+
+createHillshade(ext_lp, scrWksp, True)
+
+lyr = lyr_obj(m, 'out_raster')
+lyr_rename(lyr, 'topo')
+
+sym = lyr.symbology
+sym.colorizer.gamma = 3.0
+lyr.symbology = sym
+
+## Road label config
+# lyr = m.addDataFromPath(r'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Streets/MapServer/7',
+#                  web_service_type = 'ARCGIS_SERVER_WEB',
+#                  custom_parameters = {})
+# lyr_rename(lyr, 'roads')
+
+# lyr = lyr_obj(m, 'roads')
+# sym = lyr.symbology 
+# sym.updateRenderer('SimpleRenderer')
+
+# symb = sym.renderer.symbol.listSymbolsFromGallery('Minor Road')[1]
+# sym.renderer.symbol = symb
+# lyr.symbology = sym
+
+classList = ['Label Class 3', # state highway no
+            'Label Class 4',  # county highway lbl
+            'Label Class 5', # state highway lbl
+            'Label Class 6']  # county route no
+
+if lyr.supports('SHOWLABELS'):
+    for lblClassName in classList:
+        lblClass = lyr.listLabelClasses(lblClassName)[0]
+        lbl_cim = lblClass.getDefinition('V3')
+#         lbl_cim.textSymbol.symbol.symbol.symbolLayers[0].color.values = [52, 52, 52, 100]
+        if lblClassName == 'Label Class 3':
+             print(dir(lbl_cim.textSymbol.symbol.callout.pointSymbol.symbolLayers[0]))
+#             print((lbl_cim.textSymbol.symbol.callout.pointSymbol.symbolLayers[0].size))
+#         lblClass.setDefinition(lbl_cim)
