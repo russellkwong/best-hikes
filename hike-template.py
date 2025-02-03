@@ -117,17 +117,46 @@ sym.renderer.symbol.outlineColor = {'RGB': [52, 52, 52, 60]}
 lyr.symbology = sym
 
 # LAND COVER
-m.addDataFromPath(os.path.join(aprx_dir, r'NLCD_LndCov_2023\Annual_NLCD_LndCov_2023_CU_C1V0_sAzmI4M2YwCTSt5k8oPt.tiff'))
-ap.conversion.RasterToPolygon(
-    in_raster="Annual_NLCD_LndCov_2023_CU_C1V0_sAzmI4M2YwCTSt5k8oPt.tiff",
-    out_polygon_features= os.path.join(aprx_gdb, r'RasterT_Annual_1'),
-    simplify="NO_SIMPLIFY",
-    raster_field="Value",
-    create_multipart_features="MULTIPLE_OUTER_PART",
-    max_vertices_per_feature=None
-)
+def gen_fields():
+    nlcd = m.addDataFromPath(r'https://www.arcgis.com/home/item.html?id=3ccf118ed80748909eb85c6d262b426f')
+    
+    temp_buff = ap.analysis.PairwiseBuffer(
+        in_features="besthikes_routes",
+        out_feature_class=os.path.join(aprx_gdb, r'route_buffer'),
+        buffer_distance_or_field="2000 Feet",
+        dissolve_option="NONE",
+        dissolve_field=None,
+        method="PLANAR",
+        max_deviation="0 DecimalDegrees"
+    )
+    
+    lyr = lyr_obj(m, 'route_buffer')
+    lyr_sel = ap.management.SelectLayerByAttribute(lyr, 'NEW_SELECTION', 
+                                                   '"Name" = \'Lindsay-Parsons\'')
+    
+    mv = aprx.activeView
+    lyrExt = mv.getLayerExtent(lyr, True)
+    
+    lyr = lyr_obj(m, 'route_buffer')
+    sr = ap.Describe(lyr).spatialReference
+    
+    sr_wkt = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],VERTCS["WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PARAMETER["Vertical_Shift",0.0],PARAMETER["Direction",1.0],UNIT["Meter",1.0]]'
 
-lyr = lyr_obj(m, 'RasterT_Annual_1')
+    ext_str = str(lyrExt)[:-11] + sr_wkt
+    print(ext_str)
+    
+    with ap.EnvManager(extent=ext_str):
+        ap.conversion.RasterToPolygon(
+            in_raster="USA NLCD Land Cover",
+            out_polygon_features=os.path.join(aprx_gdb, r'RasterT_USA_NLC2'),
+            simplify="NO_SIMPLIFY",
+            raster_field="Value",
+            create_multipart_features="MULTIPLE_OUTER_PART",
+            max_vertices_per_feature=None
+        )
+
+gen_fields()
+lyr = lyr_obj(m, 'RasterT_USA_NLC2')
 lyr_rename(lyr, 'landcov')
 sym = lyr.symbology
 
