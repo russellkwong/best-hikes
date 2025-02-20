@@ -480,6 +480,37 @@ recTxt = aprx.createTextElement(lyt, MakeRec_LL(0.5, 4.5, 5.0, 3.5), 'POLYGON',
 #                  web_service_type = 'ARCGIS_SERVER_WEB',
 #                  custom_parameters = {})
 
+def gen_scale():
+    '''
+    Generates a standard scale bar with 0.5 mi division and 0.25 mi sub.
+
+    Returns: Scale bar element
+    '''
+    # generate scale bar
+    sbName = 'Scale Line 1'
+    sbStyItm = aprx.listStyleItems('ArcGIS 2D', 'SCALE_BAR', sbName)[0]
+    sbEnv = MakeRec_LL(3.35, 0.575, 2.0, 0.5)
+    sb = lyt.createMapSurroundElement(sbEnv, 'Scale_bar', mf, sbStyItm)
+
+    # formatting scale bar
+    sb_cim = sb.getDefinition('V3')
+    sb_cim.divisions = 2
+    sb_cim.subdivisions = 2
+    sb_cim.fittingStrategy = 'AdjustDivisions'
+    sb_cim.division = 0.5
+    sb_cim.divisionMarkHeight = 5
+    sb_cim.subdivisionMarkHeight = 4
+    sb_cim.labelSymbol.symbol.fontFamilyName = 'Arial'
+    sb_cim.labelSymbol.symbol.height = 7
+    sb_cim.unitLabelSymbol.symbol.fontFamilyName = 'Arial'
+    sb_cim.unitLabelSymbol.symbol.height = 7
+    sb_cim.anchor = 'BottomRightCorner'
+    sb.setDefinition(sb_cim)
+    
+    return(sb)
+
+sb = gen_scale()
+
 ## -- TO BE FORMATTED --
 
 ## Upload hikes geojson
