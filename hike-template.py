@@ -464,6 +464,217 @@ sym.renderer.symbol.applySymbolFromGallery('Dashed 2:2')
 sym.renderer.symbol.outlineWidth = 0.7
 lyr.symbology = sym
 
+
+# -- TO BE FORMATTED --
+def gen_flltPreserve():
+    """
+    Generates layer of FLLT Preserve boundary as polygon.
+
+    Returns: 
+    None
+    """
+    lyr = ap.conversion.JSONToFeatures(
+        in_json_file=os.path.join(aprx_dir, r'fllt-preserve-boundaries.geojson'),
+        out_features=os.path.join(aprx_gdb, r'flltPreserve'),
+        geometry_type="POLYGON"
+    )
+    lyr = lyr_obj(m, 'flltPreserve')
+    
+    sym = lyr.symbology
+    sym.updateRenderer('SimpleRenderer')
+    
+    sym.renderer.symbol.applySymbolFromGallery('Extent Transparent Gray')
+    # sym.renderer.symbol.outlineWidth = 1.5
+    # sym.renderer.symbol.outlineColor = {'RGB': [100, 100, 100, 60]}
+    lyr.symbology = sym
+    pass
+
+def gen_flltTrails():
+    """
+    Generates layer of FLLT Trails as polyline.
+
+    Returns:
+    None
+    """
+    lyr = ap.conversion.JSONToFeatures(
+        in_json_file=os.path.join(aprx_dir, r'fllt-trails.geojson'),
+        out_features=os.path.join(aprx_gdb, r'flltTrails'),
+        geometry_type="POLYLINE"
+    )
+    lyr = lyr_obj(m, 'flltTrails')
+    
+    sym = lyr.symbology
+    sym.updateRenderer('SimpleRenderer')
+    
+    sym.renderer.symbol.applySymbolFromGallery('Dashed 2:2')
+    sym.renderer.symbol.outlineWidth = 0.7
+    lyr.symbology = sym
+    pass
+
+roads_svc = {'roads4': '4',
+                     'roads5': '5',
+                     'roads6': '6',
+                     'roads7': '7',
+                     'roads8': '8',
+                     'roads9': '9',
+                     'roads10': '10'}
+
+def gen_roads(scale):
+    """
+    Generates layer of NYS roads as polyline.
+
+    Returns:
+    None
+    """
+    svcpath = r'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Streets/MapServer/'
+    
+    lyr = m.addDataFromPath(''.join((svcpath, scale)),
+                     web_service_type = 'ARCGIS_SERVER_WEB',
+                     custom_parameters = {})
+    lyr_rename(lyr, 'roads')
+    
+    lyr = lyr_obj(m, 'roads')
+    sym = lyr.symbology 
+    sym.updateRenderer('SimpleRenderer')
+    
+    symb = sym.renderer.symbol.listSymbolsFromGallery('Minor Road')[1]
+    sym.renderer.symbol = symb
+    lyr.symbology = sym
+    pass
+
+# notes
+# 33 jim schug trail, z = 40,000
+# road name lbl class 5, hwy_num class 3
+
+lyt = aprx.createLayout(6, 9, 'INCH', 'Layout')
+mf = lyt.createMapFrame(MakeRec_LL(0.50, 0.50, 5.0, 3.75), m, 'Map 1')
+
+recTxt = aprx.createTextElement(lyt, MakeRec_LL(0.5, 4.5, 5.0, 3.5), 'POLYGON',
+                             'Sample Text', 10, 'Arial', 'Regular', name='SampleText')
+
+# m.addDataFromPath(r'https://elevation.its.ny.gov/arcgis/rest/services/NYS_Statewide_Hillshade/MapServer/3',
+#                  web_service_type = 'ARCGIS_SERVER_WEB',
+#                  custom_parameters = {})
+
+lyr = m.addDataFromPath(r'https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Railroads_1/FeatureServer/0',
+                 web_service_type = 'ARCGIS_SERVER_WEB',
+                 custom_parameters = {})
+lyr_rename(lyr, 'rails')
+
+sym = lyr.symbology 
+sym.updateRenderer('SimpleRenderer')
+
+sym.renderer.symbol.applySymbolFromGallery('Railroad')
+lyr.symbology = sym
+
+def gen_waterfeatures(topo=False, labels=False):
+    """
+    Generates layer of water features as polygon.
+
+    Returns:
+    lyr (Layer Object): Layer of water features
+    """
+    lyr = m.addDataFromPath(r'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Hydrography/MapServer/9',
+                     web_service_type = 'ARCGIS_SERVER_WEB',
+                     custom_parameters = {})
+    lyr_rename(lyr, 'hydro')
+    
+    sym = lyr.symbology
+    sym.updateRenderer('SimpleRenderer')
+
+    if topo == False:
+        sym.renderer.symbol.color = {'RGB': [204, 204, 204, 100]}
+        sym.renderer.symbol.outlineColor = {'RGB': [51, 51, 51, 100]}
+    elif topo == True:
+        sym.renderer.symbol.color = {'RGB': [158, 158, 158, 100]}
+        sym.renderer.symbol.outlineColor = {'RGB': [51, 51, 51, 100]}
+    sym.renderer.symbol.outlineWidth = 1
+    lyr.symbology = sym
+
+    if labels == True:
+        gen_waterlabels(lyr)
+    pass
+
+def gen_waterlabels(lyr):
+    """
+    Generates labels for water features.
+
+    Parameters:
+    lyr (Layer object): Layer of water features
+
+    Returns:
+    None
+    """
+    if lyr.supports('SHOWLABELS'):
+        lblClass = lyr.listLabelClasses()[0]
+        lbl_cim = lblClass.getDefinition('V3')
+        lbl_cim.textSymbol.symbol.fontFamilyName = 'Times New Roman'
+        lbl_cim.textSymbol.symbol.height = 7
+        lbl_cim.textSymbol.symbol.symbol.symbolLayers[0].color.values = [52, 52, 52, 100]
+        lblClass.setDefinition(lbl_cim)
+        lyr.showLabels = True
+    pass
+
+# Need to add labels to water bodies
+def gen_streams():
+    """
+    Generates stream features as polyline.
+
+    Returns:
+    None
+    """
+    lyr = m.addDataFromPath(r'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Hydrography/MapServer/15',
+                     web_service_type = 'ARCGIS_SERVER_WEB',
+                     custom_parameters = {})
+    lyr_rename(lyr, 'streams')
+    
+    sym = lyr.symbology
+    sym.updateRenderer('SimpleRenderer')
+    
+    sym.renderer.symbol.color = {'RGB': [204, 204, 204, 100]}
+    sym.renderer.symbol.outlineWidth = 2
+    lyr.symbology = sym
+    
+    if lyr.supports('SHOWLABELS'):
+        lblClass = lyr.listLabelClasses()[0]
+        lbl_cim = lblClass.getDefinition('V3')
+        lbl_cim.textSymbol.symbol.symbol.symbolLayers[0].color.values = [52, 52, 52, 100]
+        lblClass.setDefinition(lbl_cim)
+        lyr.showLabels = True
+    pass
+# Need to reformat labels
+
+def gen_scale():
+    '''
+    Generates a standard scale bar with 0.5 mi division and 0.25 mi sub.
+
+    Returns: Scale bar element
+    '''
+    # generate scale bar
+    sbName = 'Scale Line 1'
+    sbStyItm = aprx.listStyleItems('ArcGIS 2D', 'SCALE_BAR', sbName)[0]
+    sbEnv = MakeRec_LL(2.35, 0.575, 3.0, 0.5)
+    sb = lyt.createMapSurroundElement(sbEnv, 'Scale_bar', mf, sbStyItm)
+
+    # formatting scale bar
+    sb_cim = sb.getDefinition('V3')
+    sb_cim.divisions = 2
+    sb_cim.subdivisions = 2
+    sb_cim.fittingStrategy = 'AdjustDivisions'
+    sb_cim.division = 0.5
+    sb_cim.divisionMarkHeight = 5
+    sb_cim.subdivisionMarkHeight = 4
+    sb_cim.labelSymbol.symbol.fontFamilyName = 'Arial'
+    sb_cim.labelSymbol.symbol.height = 7
+    sb_cim.unitLabelSymbol.symbol.fontFamilyName = 'Arial'
+    sb_cim.unitLabelSymbol.symbol.height = 7
+    sb_cim.anchor = 'BottomRightCorner'
+    sb.setDefinition(sb_cim)
+    
+    return(sb)
+
+sb = gen_scale()
+
 # LAYOUT
 lyt = aprx.createLayout(6, 9, 'INCH', 'Layout')
 mf = lyt.createMapFrame(MakeRec_LL(0.50, 0.50, 5.0, 3.75), m, 'Map 1')
@@ -540,3 +751,148 @@ sym = lyr.symbology
 sym.renderer.symbol.outlineWidth = 3.4
 sym.renderer.symbol.outlineColor = {'RGB': [52, 52, 52, 60]}
 lyr.symbology = sym
+
+# def createHillshade(ocs, ext, gdb, lp):
+#     if lp is True:
+#         with arcpy.EnvManager(outputCoordinateSystem = ocs,
+#                               extent = (ext + ocs)):
+#             arcpy.ddd.HillShade(
+#                 in_raster="County_Tompkins2008_2_meter",
+#                 out_raster=os.path.join(gdb, r'HillSha_Coun1'),
+#                 azimuth=315,
+#                 altitude=45,
+#                 model_shadows="NO_SHADOWS",
+#                 z_factor=1
+#             )
+def createHillshade(ocs, ext, gdb):
+    with arcpy.EnvManager(extent = (ext + ocs)):
+        arcpy.ddd.HillShade(
+            in_raster="County_Tompkins2008_2_meter",
+            out_raster=os.path.join(gdb, r'HillSha_Coun1'),
+            azimuth=315,
+            altitude=45,
+            model_shadows="NO_SHADOWS",
+            z_factor=1
+        )
+    lyr = lyr_obj(m, 'HillSha_Coun1')
+    return(lyr)
+
+def editHillshade(lyr):
+    """
+    Renames topo layer and sets gamma.
+
+    Returns:
+    None
+    """
+    lyr_rename(lyr, 'topo')
+    sym = lyr.symbology
+    sym.colorizer.gamma = 2.0
+    lyr.symbology = sym
+    pass
+
+# extents - SW corner NE corner - WSEN
+# ext_lp1 - close range (extreme hills)
+# ext_lp2 - far range (less hills)
+# ext_lp3 - med range (med hills)
+
+def addTompkinsDEM():
+    """
+    Adds DEM layer of Tompkins County.
+
+    Returns:
+    lyr (Layer object): Tompkins County DEM
+    """
+    lyr = m.addDataFromPath(r'https://elevation.its.ny.gov/arcgis/rest/services/County_Tompkins2008_2_meter/ImageServer',
+                     web_service_type = 'ARCGIS_SERVER_WEB',
+                     custom_parameters = {})
+    return(lyr)
+
+ocs = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],VERTCS["WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PARAMETER["Vertical_Shift",0.0],PARAMETER["Direction",1.0],UNIT["Meter",1.0]]'
+ext_lp1 = '-76.5271191647879 42.3051024869337 -76.5054331313753 42.3211945965332 '
+ext_lp2 = '-76.5306704765596 42.3004776482477 -76.4988311322597 42.3258859175778 '
+ext_lp3 = '-76.525825108996 42.3054403361241 -76.5044214385469 42.3202781463147 '
+ext_jms = '-76.2930 42.4435 -76.2500 42.4740 '
+
+# createHillshade(ocs, ext_jms, aprx_gdb, True)
+
+# lyr = lyr_obj(m, 'HillSha_Coun1')
+# lyr_rename(lyr, 'topo')
+# sym = lyr.symbology
+# sym.colorizer.gamma = 2.0
+# lyr.symbology = sym
+
+# with arcpy.EnvManager(extent='-76.2931859844556 42.4437791674571 -76.2500545262067 42.4712540073721 GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],VERTCS["WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PARAMETER["Vertical_Shift",0.0],PARAMETER["Direction",1.0],UNIT["Meter",1.0]]'):
+#     arcpy.ddd.HillShade(
+#         in_raster="County_Tompkins2008_2_meter",
+#         out_raster=r"C:\Users\kwong\Desktop\best-hikes\MyProject.gdb\HillSha_Coun1",
+#         azimuth=315,
+#         altitude=45,
+#         model_shadows="NO_SHADOWS",
+#         z_factor=1
+#     )
+
+# ext_jms = '-76.2930 42.4435 -76.2500 42.4730 '
+
+# createHillshade(ocs, ext_jms, aprx_gdb, True)
+
+# sym = lyr.symbology
+# sym.colorizer.gamma = 1
+# lyr.symbology = sym
+
+# with arcpy.EnvManager(extent='-76.2931859844556 42.4437791674571 -76.2500545262067 42.4712540073721 GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],VERTCS["WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PARAMETER["Vertical_Shift",0.0],PARAMETER["Direction",1.0],UNIT["Meter",1.0]]'):
+#     arcpy.ddd.HillShade(
+#         in_raster="County_Tompkins2008_2_meter",
+#         out_raster=r"C:\Users\kwong\Desktop\best-hikes\MyProject.gdb\HillSha_Coun1",
+#         azimuth=315,
+#         altitude=45,
+#         model_shadows="NO_SHADOWS",
+#         z_factor=1
+#     )
+def createHillshade(ocs, ext, gdb, lp):
+    if lp is True:
+        with arcpy.EnvManager(extent = (ext + ocs)):
+            arcpy.ddd.HillShade(
+                in_raster="County_Tompkins2008_2_meter",
+                out_raster=os.path.join(gdb, r'HillSha_Coun1'),
+                azimuth=315,
+                altitude=45,
+                model_shadows="NO_SHADOWS",
+                z_factor=1
+            )
+
+
+
+createHillshade(ocs, ext_jms, aprx_gdb, True)
+
+def set_mf(mf, trail):
+    """
+    Sets Map Frame extent camera on layout.
+
+    Parameters:
+    mf (Map Frame Element): Map frame to display trail.
+    trail (str): Name of trail to focus camera.
+    
+    Returns:
+    mf (Map Frame Element): Main map frame on layout.
+    """
+    if trail == 'jms':
+        mf_cim = mf.getDefinition('V3')
+        mf_cim.view.camera.x = -76.2716982
+        mf_cim.view.camera.y = 42.4584028
+        mf_cim.view.camera.scale = 35000
+        mf.setDefinition(mf_cim)
+    return(mf)
+
+def gen_jms(): 
+    gen_waterfeatures(topo = True,
+                      labels = True)
+    # gen_streams()
+    # gen_roads(roads_svc['roads8'])
+    # addTompkinsDEM()
+    # topo = createHillshade(ocs, ext_jms, aprx_gdb)
+    # editHillshade(topo)
+    # set_mf(mf, 'jms')
+    pass
+
+gen_jms()
+    
