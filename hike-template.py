@@ -466,6 +466,7 @@ lyr.symbology = sym
 
 
 # -- TO BE FORMATTED --
+# GIANT BLOCK #
 def gen_flltPreserve():
     """
     Generates layer of FLLT Preserve boundary as polygon.
@@ -724,11 +725,86 @@ def editHillshade(lyr):
     lyr.symbology = sym
     pass
 
-lyt = aprx.createLayout(6, 9, 'INCH', 'Layout')
-mf = lyt.createMapFrame(MakeRec_LL(0.50, 0.50, 5.0, 3.75), m, 'Map 1')
+def gen_fields(trail):
+    """
+    Generate fields as polygon layer from raster NLCD.
 
-recTxt = aprx.createTextElement(lyt, MakeRec_LL(0.5, 4.5, 5.0, 3.5), 'POLYGON',
-                             'Sample Text', 10, 'Arial', 'Regular', name='SampleText')
+    Parameters:
+    trail (str): Name of trail to generate fields.
+
+    Returns:
+    None
+    """
+    
+    nlcd = m.addDataFromPath(r'https://www.arcgis.com/home/item.html?id=3ccf118ed80748909eb85c6d262b426f')
+
+    ext_str = trails_dict[trail]['topo_ext'] + ocs
+     
+    with ap.EnvManager(extent=ext_str):
+        lyr = ap.conversion.RasterToPolygon(
+            in_raster="USA NLCD Land Cover",
+            out_polygon_features=os.path.join(aprx_gdb, r'RasterT_USA_NLC2'),
+            simplify="NO_SIMPLIFY",
+            raster_field="Value",
+            create_multipart_features="MULTIPLE_OUTER_PART",
+            max_vertices_per_feature=None
+        )
+    fields_sym()
+    pass
+
+def fields_sym(lyr=False):
+    """
+    Modifies fields layer symbology.
+
+    Parameters:
+    lyr (Layer object): Fields layer to modify [opt]
+
+    Returns:
+    None
+    """
+    if lyr == False:
+        lyr = lyr_obj(m, 'RasterT_USA_NLC2')
+    lyr_rename(lyr, 'landcov')
+    sym = lyr.symbology
+    
+    sym.updateRenderer('UniqueValueRenderer')
+    sym.renderer.fields = ['gridcode']
+    
+    # apply symbol through symbology
+    for grp in sym.renderer.groups:
+        for itm in grp.items:
+            if itm.values[0][0] in ['71', '81']:
+                itm.symbol.applySymbolFromGallery('10% Ordered Stipple')
+            else:
+                itm.symbol.color = {'RGB': [255, 255, 255, 0]}
+            itm.symbol.outlineWidth = 0
+    lyr.symbology = sym
+
+    # edit symbol in cim
+    lyr_cim = lyr.getDefinition('V3')
+    for grp in lyr_cim.renderer.groups:
+        for grpclass in grp.classes:
+            if grpclass.label in ['71', '81']:
+                grpclass.symbol.symbol.symbolLayers[2].color.values = [255, 255, 255, 0]
+    lyr.setDefinition(lyr_cim)
+    
+    pass
+
+# GIANT BLOCK #
+
+def layout_init():
+    """
+    Creates Layout object for map display with map frame.
+
+    Returns:
+    lyt (Layout object): Layout object for map.
+    """
+    lyt = aprx.createLayout(6, 9, 'INCH', 'Layout')
+    mf = lyt.createMapFrame(MakeRec_LL(0.50, 0.50, 5.0, 3.75), m, 'Map 1')
+    
+    recTxt = aprx.createTextElement(lyt, MakeRec_LL(0.5, 4.5, 5.0, 3.5), 'POLYGON',
+                                 'Sample Text', 10, 'Arial', 'Regular', name='SampleText')
+    return(lyt)
 
 # m.addDataFromPath(r'https://elevation.its.ny.gov/arcgis/rest/services/NYS_Statewide_Hillshade/MapServer/3',
 #                  web_service_type = 'ARCGIS_SERVER_WEB',
@@ -967,40 +1043,49 @@ def createHillshade(ocs, ext, gdb, lp):
 
 createHillshade(ocs, ext_jms, aprx_gdb, True)
 
-def set_mf(mf, trail):
+def set_mf(trail, lyt=False):
     """
     Sets Map Frame extent camera on layout.
 
     Parameters:
-    mf (Map Frame Element): Map frame to display trail.
     trail (str): Name of trail to focus camera.
+    lyt (Layout object): Layout object for map display, creates object if False.
     
     Returns:
     mf (Map Frame Element): Main map frame on layout.
     """
-    if trail == 'jms':
-        mf_cim = mf.getDefinition('V3')
-        mf_cim.view.camera.x = -76.2716982
-        mf_cim.view.camera.y = 42.4584028
-        mf_cim.view.camera.scale = 35000
-        mf.setDefinition(mf_cim)
+    trl_attr = trails_dict[trail]
+
+    if lyt == False:
+        lyt = layout_init()
+    mf = lyt.listElements('MapFrame_Element')[0]
+    mf_cim = mf.getDefinition('V3')
+    mf_cim.view.camera.x = trl_attr['mf_camx']
+    mf_cim.view.camera.y = trl_attr['mf_camy']
+    mf_cim.view.camera.scale = trl_attr['mf_camScale']
+    mf.setDefinition(mf_cim)
     return(mf)
 
 def gen_jms(): 
-    gen_waterfeatures(topo = True,
-                      labels = True)
-    gen_streams(topo = True,
-               labels = False)
+    # gen_waterfeatures(topo = True,
+    #                   labels = True)
+    # gen_streams(topo = True,
+    #            labels = False)
     # gen_roads(roads_svc['roads8'])
     # gen_rails()
     # addTompkinsDEM()
     # topo = createHillshade(ocs, ext_jms, aprx_gdb)
     # editHillshade(topo)
-    # set_mf(mf, 'jms')
+    # set_mf('jms', False)
+    gen_fields('jms')
     pass
 
 gen_jms()
-    
+
+trails_dict = {'jms': {'topo_ext': '-76.2930 42.4435 -76.2500 42.4740 ',
+                       'mf_camx': -76.2716982,
+                       'mf_camy': 42.4584028,
+                       'mf_camScale': 35000}}    
 
 lyr = lyr_obj(m, 'roads')
 
