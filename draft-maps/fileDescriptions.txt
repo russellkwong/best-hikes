@@ -1,6 +1,6 @@
-Sample layout of Lindsay-Parsons Biodiversity Preserve trail
+Sample layouts of Lindsay-Parsons Biodiversity Preserve trail
 
-LayoutA - Full layout with contours, hydro, fields
-LayoutB - Layout with hydro and fields (no contours)
-LayoutC - Layout with hydro and contours (no fields)
-LayoutD - Layout with hydro (no fields, no contours)
+layout-drafts-250126 - Layout drafts (4)
+layout-drafts-250130 - Layout drafts (5)
+
+revisions-250130 - Responses to comments from 0126
