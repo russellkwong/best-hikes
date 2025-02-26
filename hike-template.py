@@ -558,11 +558,16 @@ def set_mf(trail, lyt=False):
     mf_cim.view.camera.y = trl_attr['mf_camy']
     mf_cim.view.camera.scale = trl_attr['mf_camScale']
     mf.setDefinition(mf_cim)
+    gen_scale(lyt, mf)
     return(mf)
 
-def gen_scale():
+def gen_scale(lyt, mf):
     '''
     Generates a standard scale bar with 0.5 mi division and 0.25 mi sub.
+
+    Parameters:
+    lyt (Layout object): Layout to add scale bar
+    mf (Map Frame element): Map frame to link scale bar
 
     Returns: Scale bar element
     '''
