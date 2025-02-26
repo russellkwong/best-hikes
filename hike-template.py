@@ -114,10 +114,19 @@ color_dict = {'grey10': [25, 25, 25],
               'grey100': [255, 255, 255]
              }
 
-trails_dict = {'jms': {'topo_ext': '-76.2930 42.4435 -76.2500 42.4740 ',
+trails_dict = {'jms': {'trail_name': 'Dryden Rail Trail - Jim Schug Trail',
+                       'topo_ext': '-76.2930 42.4435 -76.2500 42.4740 ',
                        'mf_camx': -76.2716982,
                        'mf_camy': 42.4584028,
-                       'mf_camScale': 35000}}
+                       'mf_camScale': 35000,
+                       'roads': 'roads8'},
+               'lp': {'trail_name': 'Lindsay-Parsons Preserve',
+                      'topo_ext': '-76.5307 42.3005 -76.4988 42.3259 ',
+                      'mf_camx': -76.5155907,
+                      'mf_camy': 42.3139858,
+                      'mf_camScale': 14870,
+                      'roads': 'roads7'}}
+
 
 def color_builder(color, alpha):
     """
@@ -165,6 +174,12 @@ lyr = ap.management.PointsToLine(
 )
 
 lyr = lyr_obj(m, 'hike_routes_tracks')
+
+sym = lyr.symbology
+
+sym.renderer.symbol.outlineWidth = 3.4
+sym.renderer.symbol.outlineColor = {'RGB': [52, 52, 52, 60]}
+lyr.symbology = sym
 
 def gen_flltPreserve():
     """
@@ -240,9 +255,11 @@ def gen_roads(scale):
     symb = sym.renderer.symbol.listSymbolsFromGallery('Minor Road')[1]
     sym.renderer.symbol = symb
     lyr.symbology = sym
+
+    gen_roadsLabels(lyr, True)
     pass
 
-def gen_roadsLabels(lyr):
+def gen_roadsLabels(lyr, labels=True):
     """
     Generates labels for roads.
 
@@ -260,7 +277,25 @@ def gen_roadsLabels(lyr):
         lbl_cim.textSymbol.symbol.symbol.symbolLayers[0].color.values = [52, 52, 52, 100]
         lblClass.setDefinition(lbl_cim)
         lyr.showLabels = labels
-    pass
+
+    for lblClass in lyr.listLabelClasses():
+        if lblClass.name == 'Label Class 3':
+            hwynum_cim = lblClass.getDefinition('V3')
+            hwynum_cim.textSymbol.symbol.symbol.symbolLayers[0].color.values = [52, 52, 52, 100]
+            hwynum_cim.textSymbol.symbol.callout = 'PointSymbol'
+            hwynum_cim.visibility = True
+            lblClass.setDefinition(hwynum_cim)
+        elif lblClass.name == 'Label Class 5':
+            hwyname_cim = lblClass.getDefinition('V3')
+            hwyname_cim.textSymbol.symbol.symbol.symbolLayers[0].color.values = [52, 52, 52, 100]
+            hwyname_cim.maplexLabelPlacementProperties.linePlacementMethod = 'OffsetCurvedFromLine'
+            hwyname_cim.visibility = True
+            lblClass.setDefinition(hwyname_cim)
+        else:
+            lbl_cim = lblClass.getDefinition('V3')
+            lbl_cim.visibility = False
+            lblClass.setDefinition(lbl_cim)
+        pass
 
 def gen_rails():
     """
@@ -394,9 +429,8 @@ def addTompkinsDEM():
 
 ocs = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],VERTCS["WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PARAMETER["Vertical_Shift",0.0],PARAMETER["Direction",1.0],UNIT["Meter",1.0]]'
 ext_lp1 = '-76.5271191647879 42.3051024869337 -76.5054331313753 42.3211945965332 '
-ext_lp2 = '-76.5306704765596 42.3004776482477 -76.4988311322597 42.3258859175778 '
+
 ext_lp3 = '-76.525825108996 42.3054403361241 -76.5044214385469 42.3202781463147 '
-ext_jms = '-76.2930 42.4435 -76.2500 42.4740 '
 
 def createHillshade(ocs, ext, gdb):
     with arcpy.EnvManager(extent = (ext + ocs)):
@@ -489,7 +523,7 @@ def fields_sym(lyr=False):
     
     pass
 
-def layout_init():
+def layout_init(trail):
     """
     Creates Layout object for map display with map frame.
 
@@ -500,7 +534,7 @@ def layout_init():
     mf = lyt.createMapFrame(MakeRec_LL(0.50, 0.50, 5.0, 3.75), m, 'Map 1')
     
     recTxt = aprx.createTextElement(lyt, MakeRec_LL(0.5, 4.5, 5.0, 3.5), 'POLYGON',
-                                 'Sample Text', 10, 'Arial', 'Regular', name='SampleText')
+                                 trails_dict[trail]['trail_name'], 14, 'Arial', 'Bold', name='TrailName')
     return(lyt)
 
 def set_mf(trail, lyt=False):
@@ -517,7 +551,7 @@ def set_mf(trail, lyt=False):
     trl_attr = trails_dict[trail]
 
     if lyt == False:
-        lyt = layout_init()
+        lyt = layout_init(trail)
     mf = lyt.listElements('MapFrame_Element')[0]
     mf_cim = mf.getDefinition('V3')
     mf_cim.view.camera.x = trl_attr['mf_camx']
@@ -555,26 +589,93 @@ def gen_scale():
     
     return(sb)
 
-sb = gen_scale()
+aprx_styl = r"C:\Users\kwong\Desktop\best-hikes\styles"
+
+def addStyle(styl_path):
+    styleItemList = aprx.styles
+    if not styl_path in aprx.styles:
+        styleItemList.append(styl_path)
+        aprx.updateStyles(styleItemList)
+    pass
+
+addStyle(os.path.join(aprx_styl, r'Government.stylx'))
+
+def add_POI():
+    """
+    Generates layer of points of interest as points.
+
+    Returns:
+    None
+    """
+    ap.management.XYTableToPoint(
+        in_table = os.path.join(aprx_dir, r'POI_hikes_18Jan25.csv'),
+        out_feature_class = os.path.join(aprx_gdb, r'POI_hikes'),
+        x_field="longitude",
+        y_field="latitude",
+        z_field=None,
+        coordinate_system='GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]];-400 -400 1000000000;-100000 10000;-100000 10000;8.98315284119521E-09;0.001;0.001;IsHighPrecision'
+    )
+    
+    poi_symbols = {'Bus stop': {'icon': 'Mass Transit',
+                                'index': 0},
+                  'Geology': {'icon': 'Climbing',
+                              'index': 0},
+                  'Historic': {'icon': 'Museum',
+                               'index': 1},
+                  'Lean-to': {'icon': 'Shelter',
+                              'index': 1},
+                  'Parking': {'icon': 'Parking',
+                              'index': 4},
+                  'Trailhead': {'icon': 'Trailhead',
+                                'index': 0},
+                  'Viewpoint': {'icon': 'View',
+                                'index': 2},
+                  'Waterfall': {'icon': 'Waterfall',
+                               'index': 0}
+                  }
+    
+    lyr = lyr_obj(m, 'POI_hikes')
+    sym = lyr.symbology
+    
+    sym.updateRenderer('UniqueValueRenderer')
+    sym.renderer.fields = ['type']
+    for grp in sym.renderer.groups:
+        for itm in grp.items:
+            symb_name = poi_symbols[itm.values[0][0]]['icon']
+            symb_index = poi_symbols[itm.values[0][0]]['index']
+            symb = itm.symbol.applySymbolFromGallery(symb_name, symb_index)
+            # itm.symbol = symb
+            itm.symbol.size = 12
+    lyr.symbology = sym
+    pass
 
 # -- INIT ABOVE --
-# -- SAMPLE CODE JMS --
+# -- SAMPLE CODE --
 
-def gen_jms(): 
+def gen_trail(trail): 
     gen_waterfeatures(topo = True,
                       labels = True)
     gen_streams(topo = True,
                labels = False)
-    gen_roads(roads_svc['roads8'])
+    gen_roads(roads_svc[trails_dict[trail]['roads']])
     gen_rails()
     addTompkinsDEM()
-    topo = createHillshade(ocs, ext_jms, aprx_gdb)
+    topo = createHillshade(ocs, trails_dict[trail]['topo_ext'], aprx_gdb)
     editHillshade(topo)
-    set_mf('jms', False)
-    gen_fields('jms')
+    set_mf(trail, False)
+    gen_fields(trail)
+    add_POI()
+    gen_flltPreserve()
+    gen_flltTrails()
+    for lyr in ('hike_routes_points', 'USA NLCD Land Cover'):
+        lyr_rmv = lyr_obj(m, lyr)
+        lyr_remove(m, lyr_rmv)
     pass
 
-gen_jms()
+gen_trail('lp')
+
+# -- SAMPLE CODE --
+# -- FORMATTING --
 
 lyr = lyr_obj(m, 'roads')
 
